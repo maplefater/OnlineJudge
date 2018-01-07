@@ -6,20 +6,21 @@ import zipfile
 from wsgiref.util import FileWrapper
 
 from django.conf import settings
-from django.http import StreamingHttpResponse, HttpResponse
+from django.http import StreamingHttpResponse, HttpResponse, FileResponse
 
 from account.decorators import problem_permission_required, ensure_created_by
 from judge.dispatcher import SPJCompiler
 from contest.models import Contest, ContestStatus
-from submission.models import Submission
+from submission.models import Submission, JudgeStatus
 from utils.api import APIView, CSRFExemptAPIView, validate_serializer
 from utils.shortcuts import rand_str, natural_sort_key
+from utils.tasks import delete_files
 
 from ..models import Problem, ProblemRuleType, ProblemTag
 from ..serializers import (CreateContestProblemSerializer, CompileSPJSerializer,
                            CreateProblemSerializer, EditProblemSerializer, EditContestProblemSerializer,
                            ProblemAdminSerializer, TestCaseUploadForm, ContestProblemMakePublicSerializer,
-                           AddContestProblemSerializer)
+                           AddContestProblemSerializer, ExportProblemSerializer, ExportProblemRequestSerialzier)
 
 
 class TestCaseAPI(CSRFExemptAPIView):
@@ -465,3 +466,53 @@ class AddContestProblemAPI(APIView):
         problem.save()
         problem.tags.set(tags)
         return self.success()
+
+
+class ExportImportProblemAPI(APIView):
+    def choose_answers(self, user, problem):
+        ret = []
+        for item in problem.languages:
+            submission = Submission.objects.filter(problem=problem,
+                                                   user_id=user.id,
+                                                   language=item,
+                                                   result=JudgeStatus.ACCEPTED).order_by("-create_time").first()
+            if submission:
+                ret.append({"language": submission.language, "code": submission.code})
+        return ret
+
+    def process_one_problem(self, zip_file, user, problem, index):
+        info = ExportProblemSerializer(problem).data
+        info["answers"] = self.choose_answers(user, problem=problem)
+        compression = zipfile.ZIP_DEFLATED
+        zip_file.writestr(zinfo_or_arcname=f"{index}/problem.json",
+                          data=json.dumps(info, indent=4),
+                          compress_type=compression)
+        problem_test_case_dir = os.path.join(settings.TEST_CASE_DIR, problem.test_case_id)
+        with open(os.path.join(problem_test_case_dir, "info")) as f:
+            info = json.load(f)
+        for k, v in info["test_cases"].items():
+            zip_file.write(filename=os.path.join(problem_test_case_dir, v["input_name"]),
+                           arcname=f"{index}/testcase/{v['input_name']}",
+                           compress_type=compression)
+            if not info["spj"]:
+                zip_file.write(filename=os.path.join(problem_test_case_dir, v["output_name"]),
+                               arcname=f"{index}/testcase/{v['output_name']}",
+                               compress_type=compression)
+
+    @validate_serializer(ExportProblemRequestSerialzier)
+    def get(self, request):
+        problems = Problem.objects.filter(id__in=request.data["problem_id"])
+        for problem in problems:
+            if problem.contest:
+                ensure_created_by(problem.contest, request.user)
+            else:
+                ensure_created_by(problem, request.user)
+        path = f"/tmp/{rand_str()}.zip"
+        with zipfile.ZipFile(path, "w") as zip_file:
+            for index, problem in enumerate(problems):
+                self.process_one_problem(zip_file=zip_file, user=request.user, problem=problem, index=index + 1)
+        delete_files.apply_async((path, ), countdown=300)
+        resp = FileResponse(open(path, "rb"))
+        resp["Content-Type"] = "application/zip"
+        resp["Content-Disposition"] = f"attachment;filename=problem-export.zip"
+        return resp

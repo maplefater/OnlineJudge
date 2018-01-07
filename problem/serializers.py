@@ -1,5 +1,6 @@
 from django import forms
 
+from options.options import SysOptions
 from judge.languages import language_names, spj_language_names
 from utils.api import UsernameSerializer, serializers
 
@@ -128,6 +129,7 @@ class ContestProblemMakePublicSerializer(serializers.Serializer):
 
 
 class ExportProblemSerializer(serializers.ModelSerializer):
+    display_id = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     input_description = serializers.SerializerMethodField()
     output_description = serializers.SerializerMethodField()
@@ -137,6 +139,10 @@ class ExportProblemSerializer(serializers.ModelSerializer):
     memory_limit = serializers.SerializerMethodField()
     spj = serializers.SerializerMethodField()
     template = serializers.SerializerMethodField()
+    source = serializers.SerializerMethodField()
+
+    def get_display_id(self, obj):
+        return obj._id
 
     def get_description(self, obj):
         return {"format": "html", "value": obj.description}
@@ -151,7 +157,8 @@ class ExportProblemSerializer(serializers.ModelSerializer):
         return {"format": "html", "value": obj.hint}
 
     def get_test_case_score(self, obj):
-        return obj.test_case_score if obj.rule_type == ProblemRuleType.OI else []
+        return [{"score": item["score"], "input_name": item["input_name"]}
+                for item in obj.test_case_score] if obj.rule_type == ProblemRuleType.OI else None
 
     def get_time_limit(self, obj):
         return {"unit": "ms", "value": obj.time_limit}
@@ -160,9 +167,8 @@ class ExportProblemSerializer(serializers.ModelSerializer):
         return {"unit": "MB", "value": obj.memory_limit}
 
     def get_spj(self, obj):
-        return {"enabled": obj.spj,
-                "code": obj.spj_code if obj.spj else None,
-                "language": obj.spj_language if obj.spj else None}
+        return {"code": obj.spj_code,
+                "language": obj.spj_language} if obj.spj else None
 
     def get_template(self, obj):
         ret = {}
@@ -170,9 +176,12 @@ class ExportProblemSerializer(serializers.ModelSerializer):
             ret[k] = parse_problem_template(v)
         return ret
 
+    def get_source(self, obj):
+        return obj.source or f"{SysOptions.website_name} {SysOptions.website_base_url}"
+
     class Meta:
         model = Problem
-        fields = ("_id", "title", "description",
+        fields = ("display_id", "title", "description",
                   "input_description", "output_description",
                   "test_case_score", "hint", "time_limit", "memory_limit", "samples",
                   "template", "spj", "rule_type", "source", "template")
@@ -182,3 +191,6 @@ class AddContestProblemSerializer(serializers.Serializer):
     contest_id = serializers.IntegerField()
     problem_id = serializers.IntegerField()
     display_id = serializers.CharField()
+
+class ExportProblemRequestSerialzier(serializers.Serializer):
+    problem_id = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
