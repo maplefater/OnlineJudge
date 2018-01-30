@@ -18,9 +18,9 @@ class UsernameOrEmailCheckSerializer(serializers.Serializer):
 
 class UserRegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=32)
-    password = serializers.CharField(min_length=6)
+    password = serializers.CharField(min_length=1)
     email = serializers.EmailField(max_length=64)
-    captcha = serializers.CharField()
+    # captcha = serializers.CharField()
 
 
 class UserChangePasswordSerializer(serializers.Serializer):
