@@ -8,7 +8,7 @@ from django.contrib import auth
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.timezone import now
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from otpauth import OtpAuth
 
 from problem.models import Problem
@@ -207,6 +207,10 @@ class UsernameOrEmailCheck(APIView):
 
 
 class UserRegisterAPI(APIView):
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super(UserRegisterAPI, self).dispatch(request, *args, **kwargs)
+
     @validate_serializer(UserRegisterSerializer)
     def post(self, request):
         """
