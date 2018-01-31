@@ -216,8 +216,9 @@ class UserRegisterAPI(APIView):
         """
         User register api
         """
-        if not SysOptions.allow_register:
-            return self.error("Register function has been disabled by admin")
+        # remove register check,since register function is  only used by oes
+        # if not SysOptions.allow_register:
+        #    return self.error("Register function has been disabled by admin")
 
         data = request.data
         data["username"] = data["username"].lower()

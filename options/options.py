@@ -28,8 +28,8 @@ class OptionDefaultValue:
     website_base_url = "http://127.0.0.1"
     website_name = "Online Judge"
     website_name_shortcut = "oj"
-    website_footer = "Online Judge Footer"
-    allow_register = True
+    website_footer = "Cambricon"
+    allow_register = False
     submission_list_show_all = True
     smtp_config = {}
     judge_server_token = default_token
