@@ -30,7 +30,7 @@ class OptionDefaultValue:
     website_name_shortcut = "oj"
     website_footer = "Cambricon"
     allow_register = False
-    submission_list_show_all = False
+    submission_list_show_all = True
     smtp_config = {}
     judge_server_token = default_token
     throttling = {"ip": {"capacity": 100, "fill_rate": 0.1, "default_capacity": 50},
