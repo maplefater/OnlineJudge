@@ -153,6 +153,14 @@ class CheckTFARequiredAPI(APIView):
 
 
 class UserLoginAPI(APIView):
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super(UserLoginAPI, self).dispatch(request, *args, **kwargs)
+
+    @validate_serializer(UserLoginSerializer)
+    def get(self, request):
+        return self.post(request)
+
     @validate_serializer(UserLoginSerializer)
     def post(self, request):
         """
