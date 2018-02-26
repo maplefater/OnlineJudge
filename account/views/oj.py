@@ -8,6 +8,7 @@ from django.contrib import auth
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.timezone import now
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from otpauth import OtpAuth
 
@@ -153,6 +154,7 @@ class CheckTFARequiredAPI(APIView):
 
 
 class UserLoginAPI(APIView):
+    @method_decorator(xframe_options_exempt)
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
         return super(UserLoginAPI, self).dispatch(request, *args, **kwargs)
