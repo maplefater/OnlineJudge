@@ -31,8 +31,7 @@ VENDOR_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'raven.contrib.django.raven_compat',
-    'corsheaders'
+    'raven.contrib.django.raven_compat'
 )
 LOCAL_APPS = (
     'account',
@@ -49,7 +48,6 @@ LOCAL_APPS = (
 INSTALLED_APPS = VENDOR_APPS + LOCAL_APPS
 
 MIDDLEWARE_CLASSES = (
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -211,5 +209,3 @@ RAVEN_CONFIG = {
 }
 
 IP_HEADER = "HTTP_X_REAL_IP"
-OES_URL = "http://58.246.138.230:5001/"
-CORS_ORIGIN_WHITELIST = (OES_URL[7:-1], "127.0.0.1:8000")
