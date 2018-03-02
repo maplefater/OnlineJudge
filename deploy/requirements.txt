@@ -17,3 +17,4 @@ gunicorn
 jsonfield
 XlsxWriter
 raven
+django-cors-headers
