@@ -75,10 +75,10 @@ class SubmissionAPI(APIView):
         # use this for debug
         # JudgeDispatcher(submission.id, problem.id).judge()
         judge_task.delay(submission.id, problem.id)
-        if hide_id:
-            return self.success()
-        else:
-            return self.success({"submission_id": submission.id})
+        # if hide_id:
+        #     return self.success()
+        # else:
+        return self.success({"submission_id": submission.id})
 
     @login_required
     def get(self, request):
